@@ -7,6 +7,8 @@
 -- get UTF8
 local utf8 = require("utf8")
 
+require "commands"
+
 -- Set up console
 console = {}
 
@@ -15,6 +17,7 @@ console.moving = false
 console.speed = 600
 console.direction = "in"
 console.hasFocus = false
+console.lastCommandFailed = false
 console.displays = {
 	"Hello World!",
 }
@@ -61,24 +64,35 @@ function console.sendCommand(message)
 	else
 		console.sendMessage("> "..message)
 
-		if message == "stop" then
-			
-			console.sendMessage("Command to stop the game has been sent!")
-			os.exit() -- close the lua script
+		local fail = true
 
-		elseif message:sub(1, 4) == "exec" then
+		-- only built in command, to allow for executing code on the fly
+		if message:sub(1, 4) == "exec" then
+			if pcall(function() loadstring(message:sub(5))() end) then
+				console.sendMessage("Code executed successfully!")
+			else
+				console.sendMessage("ERROR: "..message:sub(5).." not valid lua!");
+			end
 
-			-- TODO: Gotta figure out how this works
-			loadstring(message:sub(6))()
-
-			console.sendMessage("Executed code!")
-
-		elseif message == "clear" then
-			console.displays = {} -- clear all messages
-
+			fail = false
 		else
-			console.sendMessage("ERROR: Command "..message.." not found!")
+
+			-- loads custom commands, only problem is, can't use args :(
+			for i, v in ipairs(commands) do
+
+				if message == v.command then
+					if pcall(function() loadstring(v.execute)() end) then
+
+					else
+						console.sendMessage("ERROR: command "..v.command.." is not valid lua!")
+					end
+					fail = false
+				end
+			end
 		end
+
+		if fail == true then console.sendMessage("ERROR: command not found") end
+
 	end
 end
 
