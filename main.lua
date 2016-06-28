@@ -12,6 +12,7 @@ function love.load()
 	love.window.setTitle("||| _j0sh's console |||")
 end
 
+
 function love.update(dt)
 	
 	if goingR == true then
