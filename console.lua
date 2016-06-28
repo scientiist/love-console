@@ -1,6 +1,6 @@
 --[[
 	LOVE2D In-game console programmed by _j0sh
-	Just add "console.update(dt)" to your love.update and "console.draw" to your love.draw
+	Just add "console.update(dt)" to your love.update and "console.draw()" to your love.draw
 	Press TAB to open console.
 ]]
 
@@ -12,6 +12,7 @@ require "commands"
 -- Set up console
 console = {}
 
+console.width = love.graphics.getWidth()
 console.pos = 200
 console.moving = false
 console.speed = 600
@@ -22,6 +23,10 @@ console.displays = {
 	"Hello World!",
 }
 console.currentText = ""
+
+function love.resize(w, h)
+	console.width = w
+end
 
 -- Love2d Text input
 function love.textinput(t)
@@ -77,12 +82,30 @@ function console.sendCommand(message)
 			fail = false
 		else
 
+			local t = {}
+			local i = 0
+			while true do
+				i = message:find(" ", i+1)
+			   	if i == nil then break end
+			    table.insert(t, i)
+			end
+
+			local args = {}
+
+			for i = 1, #t do
+				args[i] = message:sub(t[i]+1, t[i+1])
+			end
+
 			-- loads custom commands, only problem is, can't use args :(
 			for i, v in ipairs(commands) do
+				local firstSpace = message:find(" ") or message:len()+1
 
-				if message == v.command then
-					if pcall(function() loadstring(v.execute)() end) then
+				if message:sub(1, firstSpace-1) == v.command then
 
+
+					
+					if pcall(function() v.execute(args) end) then
+						-- command was successfull, we needn't do any more
 					else
 						console.sendMessage("ERROR: command "..v.command.." is not valid lua!")
 					end
@@ -144,18 +167,18 @@ function console.draw()
 
 	-- console box
 	love.graphics.setColor(80, 80, 80, 100)
-	love.graphics.rectangle("fill", 0, 0-console.pos, love.graphics.getWidth(), 200)
+	love.graphics.rectangle("fill", 0, 0-console.pos, console.width, 200)
 
 	-- title and debug info
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.print("_j0sh's console", 5, 5-console.pos)
-	love.graphics.print("framerate: " .. love.timer.getFPS(), love.graphics.getWidth()-240, 5-console.pos)
-	love.graphics.print("memory(kb): " .. math.ceil(collectgarbage("count")), love.graphics.getWidth()-130, 5-console.pos)
+	love.graphics.print("framerate: " .. love.timer.getFPS(), console.width-240, 5-console.pos)
+	love.graphics.print("memory(kb): " .. math.ceil(collectgarbage("count")), console.width-130, 5-console.pos)
 
 	-- box of messages or already completed commands
 	love.graphics.setColor(0,50,255)
-	love.graphics.line(0,25-console.pos, love.graphics.getWidth(), 25-console.pos)
-	love.graphics.line(0, 180-console.pos, love.graphics.getWidth(), 180-console.pos)
+	love.graphics.line(0,25-console.pos, console.width, 25-console.pos)
+	love.graphics.line(0, 180-console.pos, console.width, 180-console.pos)
 
 	-- draw the actual text thingies
 	for index, message in ipairs(console.displays) do
